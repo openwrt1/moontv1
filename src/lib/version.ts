@@ -13,7 +13,7 @@ export enum UpdateStatus {
 
 // 远程版本检查URL配置
 const VERSION_CHECK_URLS = [
-  'https://raw.githubusercontent.com/openwrt1/moontv1/refs/heads/main/VERSION.txt?token=GHSAT0AAAAAADLUUAL6PN7XHNLO6X6UR3H42GST26A',
+  '/VERSION.txt', // 指向本站点的根目录
 ];
 
 /**
