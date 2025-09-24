@@ -36,8 +36,8 @@ const updatedContent = fileContent.replace(
 // 写入更新后的内容
 fs.writeFileSync(versionFilePath, updatedContent, 'utf8');
 
-// 将版本号写入根目录下的 VERSION.txt 文件
-const versionTxtPath = path.join(__dirname, '..', 'VERSION.txt');
+// 将版本号写入 public 目录下的 VERSION.txt 文件
+const versionTxtPath = path.join(__dirname, '..', 'public', 'VERSION.txt');
 fs.writeFileSync(versionTxtPath, currentVersion, 'utf8');
 
 console.log(`版本号已更新为: ${currentVersion}`);
