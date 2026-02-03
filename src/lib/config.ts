@@ -380,10 +380,16 @@ export async function getCacheTime(): Promise<number> {
 
 export async function getAvailableApiSites(): Promise<ApiSite[]> {
   const config = await getConfig();
-  return config.SourceConfig.filter((s) => !s.disabled).map((s) => ({
+  const sites = config.SourceConfig.filter((s) => !s.disabled).map((s) => ({
     key: s.key,
     name: s.name,
     api: s.api,
     detail: s.detail,
   }));
+  console.log(
+    `[Config] 已加载 ${sites.length} 个源: ${sites
+      .map((s) => s.name)
+      .join(', ')}`
+  );
+  return sites;
 }

@@ -20,6 +20,9 @@ export async function searchFromApi(
   query: string
 ): Promise<SearchResult[]> {
   try {
+    console.log(
+      `[Downstream] 🔍 正在搜索源 [${apiSite.name}] 关键字: ${query}`
+    );
     const apiBaseUrl = apiSite.api;
     const apiUrl =
       apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(query);
@@ -27,7 +30,7 @@ export async function searchFromApi(
 
     // 添加超时处理
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     const response = await fetch(apiUrl, {
       headers: API_CONFIG.search.headers,
@@ -37,16 +40,41 @@ export async function searchFromApi(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      console.warn(
+        `[Downstream] ❌ 源 [${apiSite.name}] 请求失败: ${response.status}`
+      );
       return [];
     }
 
-    const data = await response.json();
+    // 先获取文本，防止非 JSON 响应导致崩溃
+    const text = await response.text();
+
+    // 检查是否是"暂不支持搜索"等非 JSON 提示
+    if (
+      text.includes('暂不支持') ||
+      text.trim().startsWith('Search not supported')
+    ) {
+      console.log(`[Downstream] ⚠️ 源 [${apiSite.name}] 提示: 不支持搜索`);
+      return [];
+    }
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.warn(
+        `[Downstream] 🚫 源 [${apiSite.name}] 返回数据格式错误 (非JSON)`
+      );
+      return [];
+    }
+
     if (
       !data ||
       !data.list ||
       !Array.isArray(data.list) ||
       data.list.length === 0
     ) {
+      console.log(`[Downstream] ⚠️ 源 [${apiSite.name}] 未找到结果`);
       return [];
     }
     // 处理第一页结果
@@ -114,7 +142,7 @@ export async function searchFromApi(
             const pageController = new AbortController();
             const pageTimeoutId = setTimeout(
               () => pageController.abort(),
-              8000
+              15000
             );
 
             const pageResponse = await fetch(pageUrl, {
@@ -181,8 +209,12 @@ export async function searchFromApi(
       });
     }
 
+    console.log(
+      `[Downstream] ✅ 源 [${apiSite.name}] 搜索完成，共找到 ${results.length} 个结果`
+    );
     return results;
   } catch (error) {
+    console.error(`[Downstream] 🚫 源 [${apiSite.name}] 发生错误:`, error);
     return [];
   }
 }
