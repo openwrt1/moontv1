@@ -174,7 +174,14 @@ function PlayPageClient() {
   const preferBestSource = async (
     sources: SearchResult[]
   ): Promise<SearchResult> => {
-    if (sources.length === 1) return sources[0];
+    console.log(`🚀 [Debug] 开始优选流程，候选源数量: ${sources.length}`);
+    // 调试模式：注释掉单源检查，强制进行测速
+    // if (sources.length === 1) {
+    //   console.log(
+    //     `ℹ️ [Debug] 只有一个源 [${sources[0].source_name}]，跳过测速直接返回`
+    //   );
+    //   return sources[0];
+    // }
 
     // 将播放源均分为两批，并发测速各批，避免一次性过多请求
     const batchSize = Math.ceil(sources.length / 2);
@@ -198,13 +205,24 @@ function PlayPageClient() {
               source.episodes.length > 1
                 ? source.episodes[1]
                 : source.episodes[0];
+            console.log(
+              `🧪 [Debug] 开始测速 [${source.source_name}]: ${episodeUrl}`
+            );
             const testResult = await getVideoResolutionFromM3u8(episodeUrl);
+            console.log(
+              `✅ [Debug] 测速成功 [${source.source_name}]:`,
+              testResult
+            );
 
             return {
               source,
               testResult,
             };
           } catch (error) {
+            console.warn(
+              `❌ [Debug] 测速失败 [${source.source_name}]:`,
+              error instanceof Error ? error.message : error
+            );
             return null;
           }
         })
@@ -242,7 +260,9 @@ function PlayPageClient() {
     setPrecomputedVideoInfo(newVideoInfoMap);
 
     if (successfulResults.length === 0) {
-      console.warn('所有播放源测速都失败，使用第一个播放源');
+      console.warn(
+        '⚠️ [Debug] 所有播放源测速都失败 (可能是CORS或网络问题)，回退使用第一个播放源'
+      );
       return sources[0];
     }
 
@@ -365,6 +385,16 @@ function PlayPageClient() {
       return Math.min(100, Math.max(0, pingRatio * 100));
     })();
     score += pingScore * 0.2;
+
+    console.log(`📊 [Debug] 评分详情:`, {
+      quality: testResult.quality,
+      qualityScore: qualityScore * 0.4,
+      speed: testResult.loadSpeed,
+      speedScore: speedScore * 0.4,
+      ping: testResult.pingTime,
+      pingScore: pingScore * 0.2,
+      total: score,
+    });
 
     return Math.round(score * 100) / 100; // 保留两位小数
   };
@@ -551,6 +581,14 @@ function PlayPageClient() {
         return;
       }
 
+      console.log('🔍 [Debug] 初始化判断:', {
+        currentSource,
+        currentId,
+        needPrefer: needPreferRef.current,
+        optimizationEnabled,
+        sourcesCount: sourcesInfo.length,
+      });
+
       let detailData: SearchResult = sourcesInfo[0];
       // 指定源和id且无需优选
       if (currentSource && currentId && !needPreferRef.current) {
@@ -558,6 +596,7 @@ function PlayPageClient() {
           (source) => source.source === currentSource && source.id === currentId
         );
         if (target) {
+          console.log('👉 [Debug] 命中指定源，跳过优选');
           detailData = target;
         } else {
           setError('未找到匹配结果');
@@ -571,6 +610,7 @@ function PlayPageClient() {
         (!currentSource || !currentId || needPreferRef.current) &&
         optimizationEnabled
       ) {
+        console.log('⚡ [Debug] 满足条件，开始优选...');
         setLoadingStage('preferring');
         setLoadingMessage('⚡ 正在优选最佳播放源...');
 

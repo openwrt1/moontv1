@@ -100,6 +100,7 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
   pingTime: number; // 网络延迟（毫秒）
 }> {
   try {
+    console.log(`[测速开始] URL: ${m3u8Url}`);
     // 直接使用m3u8 URL作为视频源，避免CORS问题
     return new Promise((resolve, reject) => {
       const video = document.createElement('video');
@@ -110,26 +111,35 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
       const pingStart = performance.now();
       let pingTime = 0;
 
-      // 测量ping时间（使用m3u8 URL）
-      fetch(m3u8Url, { method: 'HEAD', mode: 'no-cors' })
-        .then(() => {
-          pingTime = performance.now() - pingStart;
-        })
-        .catch(() => {
-          pingTime = performance.now() - pingStart; // 记录到失败为止的时间
-        });
-
       // 固定使用hls.js加载
       const hls = new Hls();
 
+      // 测量ping时间（使用m3u8 URL）
+      fetch(m3u8Url, { method: 'GET', mode: 'no-cors' })
+        .then(() => {
+          pingTime = performance.now() - pingStart;
+          console.log(`[测速Ping] 成功: ${Math.round(pingTime)}ms`);
+        })
+        .catch((err) => {
+          pingTime = performance.now() - pingStart; // 记录到失败为止的时间
+          console.warn(`[测速Ping] 失败: ${err}`);
+          // 如果 Ping 都失败了（通常是域名解析失败或严重网络错误），直接拒绝，不再尝试 HLS
+          // 注意：no-cors 模式下 404/403 不会抛出 error，只有网络断开/DNS失败才会抛出
+          hls.destroy();
+          video.remove();
+          reject(new Error(`网络连接失败: ${err.message}`));
+        });
+
       // 设置超时处理
       const timeout = setTimeout(() => {
+        console.warn(`[测速超时] 4000ms`);
         hls.destroy();
         video.remove();
         reject(new Error('Timeout loading video metadata'));
       }, 4000);
 
-      video.onerror = () => {
+      video.onerror = (e) => {
+        console.error(`[测速VideoError]`, e);
         clearTimeout(timeout);
         hls.destroy();
         video.remove();
@@ -144,6 +154,9 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
 
       // 检查是否可以返回结果
       const checkAndResolve = () => {
+        console.log(
+          `[测速检查] metadata:${hasMetadataLoaded}, speed:${hasSpeedCalculated}, val:${actualLoadSpeed}`
+        );
         if (
           hasMetadataLoaded &&
           (hasSpeedCalculated || actualLoadSpeed !== '未知')
@@ -168,6 +181,9 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
                 ? '480p'
                 : 'SD'; // 480p: 854x480
 
+            console.log(
+              `[测速完成] Quality: ${quality}, Speed: ${actualLoadSpeed}`
+            );
             resolve({
               quality,
               loadSpeed: actualLoadSpeed,
@@ -186,11 +202,15 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
 
       // 监听片段加载开始
       hls.on(Hls.Events.FRAG_LOADING, () => {
+        console.log(`[测速HLS] 开始加载分片`);
         fragmentStartTime = performance.now();
       });
 
       // 监听片段加载完成，只需首个分片即可计算速度
       hls.on(Hls.Events.FRAG_LOADED, (event: any, data: any) => {
+        console.log(
+          `[测速HLS] 分片加载完成, size: ${data?.payload?.byteLength}`
+        );
         if (
           fragmentStartTime > 0 &&
           data &&
@@ -224,6 +244,9 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
       hls.on(Hls.Events.ERROR, (event: any, data: any) => {
         console.error('HLS错误:', data);
         if (data.fatal) {
+          console.error(
+            `[测速HLS致命错误] ${data.type} details:${data.details}`
+          );
           clearTimeout(timeout);
           hls.destroy();
           video.remove();
@@ -233,6 +256,9 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
 
       // 监听视频元数据加载完成
       video.onloadedmetadata = () => {
+        console.log(
+          `[测速Video] 元数据加载完成: ${video.videoWidth}x${video.videoHeight}`
+        );
         hasMetadataLoaded = true;
         checkAndResolve(); // 尝试返回结果
       };
