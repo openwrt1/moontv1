@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 
 import './globals.css';
 import 'sweetalert2/dist/sweetalert2.min.css';
@@ -9,15 +8,13 @@ import { getConfig } from '@/lib/config';
 import { SiteProvider } from '../components/SiteProvider';
 import { ThemeProvider } from '../components/ThemeProvider';
 
-const inter = Inter({ subsets: ['latin'] });
-
 // 动态生成 metadata，支持配置更新后的标题变化
 export async function generateMetadata(): Promise<Metadata> {
   let siteName = process.env.SITE_NAME || 'MoonTV';
-  if (
-    process.env.NEXT_PUBLIC_STORAGE_TYPE !== 'd1' &&
-    process.env.NEXT_PUBLIC_STORAGE_TYPE !== 'upstash'
-  ) {
+  const storageType =
+    process.env.NEXT_PUBLIC_STORAGE_TYPE ||
+    (process.env.NODE_ENV === 'development' ? 'localstorage' : 'd1');
+  if (storageType !== 'd1' && storageType !== 'upstash') {
     const config = await getConfig();
     siteName = config.SiteConfig.SiteName;
   }
@@ -46,10 +43,10 @@ export default async function RootLayout({
   let enableRegister = process.env.NEXT_PUBLIC_ENABLE_REGISTER === 'true';
   let imageProxy = process.env.NEXT_PUBLIC_IMAGE_PROXY || '';
   let doubanProxy = process.env.NEXT_PUBLIC_DOUBAN_PROXY || '';
-  if (
-    process.env.NEXT_PUBLIC_STORAGE_TYPE !== 'd1' &&
-    process.env.NEXT_PUBLIC_STORAGE_TYPE !== 'upstash'
-  ) {
+  const storageType =
+    process.env.NEXT_PUBLIC_STORAGE_TYPE ||
+    (process.env.NODE_ENV === 'development' ? 'localstorage' : 'd1');
+  if (storageType !== 'd1' && storageType !== 'upstash') {
     const config = await getConfig();
     siteName = config.SiteConfig.SiteName;
     announcement = config.SiteConfig.Announcement;
@@ -60,7 +57,7 @@ export default async function RootLayout({
 
   // 将运行时配置注入到全局 window 对象，供客户端在运行时读取
   const runtimeConfig = {
-    STORAGE_TYPE: process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage',
+    STORAGE_TYPE: storageType,
     ENABLE_REGISTER: enableRegister,
     IMAGE_PROXY: imageProxy,
     DOUBAN_PROXY: doubanProxy,
@@ -81,9 +78,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${inter.className} min-h-screen bg-white text-gray-900 dark:bg-black dark:text-gray-200`}
-      >
+      <body className='min-h-screen bg-white text-gray-900 dark:bg-black dark:text-gray-200 font-sans'>
         <ThemeProvider
           attribute='class'
           defaultTheme='system'

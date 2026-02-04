@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { API_CONFIG, ApiSite, getConfig } from '@/lib/config';
 import { SearchResult } from '@/lib/types';
 import { cleanHtmlTags } from '@/lib/utils';
