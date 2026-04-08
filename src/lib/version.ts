@@ -2,7 +2,7 @@
 
 'use client';
 
-const CURRENT_VERSION = '20260408171615';
+const CURRENT_VERSION = '20260408171913';
 
 // 版本检查结果枚举
 export enum UpdateStatus {
@@ -27,6 +27,9 @@ export async function checkForUpdates(): Promise<UpdateStatus> {
     if (primaryVersion) {
       return compareVersions(primaryVersion);
     }
+
+    // 如果未能获取到有效的版本信息，返回获取失败状态
+    return UpdateStatus.FETCH_FAILED;
   } catch (error) {
     console.error('版本检查失败:', error);
     return UpdateStatus.FETCH_FAILED;
