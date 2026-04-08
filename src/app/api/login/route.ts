@@ -56,10 +56,13 @@ async function generateAuthCookie(
     authData.password = password;
   }
 
-  if (username && process.env.PASSWORD) {
+  // 获取环境变量密码，如果没有则使用默认值 admin
+  const secret = process.env.ADMIN_PASSWORD || process.env.PASSWORD || 'admin';
+
+  if (username) {
     authData.username = username;
     // 使用密码作为密钥对用户名进行签名
-    const signature = await generateSignature(username, process.env.PASSWORD);
+    const signature = await generateSignature(username, secret);
     authData.signature = signature;
     authData.timestamp = Date.now(); // 添加时间戳防重放攻击
   }
@@ -69,62 +72,9 @@ async function generateAuthCookie(
 
 export async function POST(req: NextRequest) {
   try {
-    // 本地 / localStorage 模式——仅校验固定密码
-    if (STORAGE_TYPE === 'localstorage') {
-      const envPassword = process.env.PASSWORD;
-
-      // 未配置 PASSWORD 时直接放行
-      if (!envPassword) {
-        const response = NextResponse.json({ ok: true });
-
-        // 清除可能存在的认证cookie
-        response.cookies.set('auth', '', {
-          path: '/',
-          expires: new Date(0),
-          sameSite: 'lax', // 改为 lax 以支持 PWA
-          httpOnly: false, // PWA 需要客户端可访问
-          secure: false, // 根据协议自动设置
-        });
-
-        return response;
-      }
-
-      const { password } = await req.json();
-      if (typeof password !== 'string') {
-        return NextResponse.json({ error: '密码不能为空' }, { status: 400 });
-      }
-
-      if (password !== envPassword) {
-        return NextResponse.json(
-          { ok: false, error: '密码错误' },
-          { status: 401 }
-        );
-      }
-
-      // 验证成功，设置认证cookie
-      const response = NextResponse.json({ ok: true });
-      const cookieValue = await generateAuthCookie(
-        undefined,
-        password,
-        'user',
-        true
-      ); // localstorage 模式包含 password
-      const expires = new Date();
-      expires.setDate(expires.getDate() + 7); // 7天过期
-
-      response.cookies.set('auth', cookieValue, {
-        path: '/',
-        expires,
-        sameSite: 'lax', // 改为 lax 以支持 PWA
-        httpOnly: false, // PWA 需要客户端可访问
-        secure: false, // 根据协议自动设置
-      });
-
-      return response;
-    }
-
-    // 数据库 / redis 模式——校验用户名并尝试连接数据库
-    const { username, password } = await req.json();
+    const body = await req.json();
+    const username = body.username;
+    const password = body.password;
 
     if (!username || typeof username !== 'string') {
       return NextResponse.json({ error: '用户名不能为空' }, { status: 400 });
@@ -133,43 +83,74 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '密码不能为空' }, { status: 400 });
     }
 
-    // 可能是站长，直接读环境变量
-    if (
-      username === process.env.USERNAME &&
-      password === process.env.PASSWORD
-    ) {
-      // 验证成功，设置认证cookie
+    // 1. 自动检测环境
+    const isVercel = !!process.env.VERCEL;
+    const isLocal = process.env.NODE_ENV === 'development';
+    // Cloudflare 通常有 CF_PAGES 变量，或者 DB 绑定
+    const isCloudflare =
+      !!process.env.CF_PAGES || process.env.STORAGE_TYPE === 'd1';
+
+    // 设置默认的站长账号密码（优先读环境变量，否则默认 admin/admin，方便本地和 Vercel 调试）
+    const envUser =
+      process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+    const envPass =
+      process.env.ADMIN_PASSWORD || process.env.PASSWORD || 'admin';
+
+    if (isLocal) {
+      console.log(
+        `[Debug] 当前期望账号: ${envUser}, 期望密码: ${envPass} | 你输入的账号: ${username}`
+      );
+    }
+
+    // 2. 优先校验站长账号密码（环境变量匹配）
+    if (username === envUser && password === envPass) {
       const response = NextResponse.json({ ok: true });
+      // 如果不是 Cloudflare D1 环境，建议把密码包含进 Cookie 方便纯前端(localstorage)模式校验
+      const includePass = !isCloudflare && STORAGE_TYPE === 'localstorage';
+
       const cookieValue = await generateAuthCookie(
         username,
         password,
         'owner',
-        false
-      ); // 数据库模式不包含 password
+        includePass
+      );
       const expires = new Date();
       expires.setDate(expires.getDate() + 7); // 7天过期
 
       response.cookies.set('auth', cookieValue, {
         path: '/',
         expires,
-        sameSite: 'lax', // 改为 lax 以支持 PWA
-        httpOnly: false, // PWA 需要客户端可访问
-        secure: false, // 根据协议自动设置
+        sameSite: 'lax',
+        httpOnly: false,
+        secure: false,
       });
 
       return response;
-    } else if (username === process.env.USERNAME) {
-      return NextResponse.json({ error: '用户名或密码错误' }, { status: 401 });
     }
 
-    const config = await getConfig();
-    const user = config.UserConfig.Users.find((u) => u.username === username);
-    if (user && user.banned) {
-      return NextResponse.json({ error: '用户被封禁' }, { status: 401 });
+    // 3. 拦截 Vercel 和本地开发环境的无效数据库查询
+    // 如果环境变量没匹配上，且处于 Vercel 或本地（且没有配置 Redis/Upstash 等外部数据库），直接返回账号密码错误，防止触发 D1 的 prepare 崩溃
+    if ((isVercel || isLocal) && STORAGE_TYPE === 'd1') {
+      return NextResponse.json(
+        { error: '账号或密码错误（本地/Vercel环境未绑定D1数据库）' },
+        { status: 401 }
+      );
     }
 
-    // 校验用户密码
+    if (STORAGE_TYPE === 'localstorage') {
+      return NextResponse.json({ error: '账号或密码错误' }, { status: 401 });
+    }
+
+    // 4. Cloudflare D1 或外部 Redis/Upstash 数据库模式：继续走数据库用户校验
     try {
+      const config = await getConfig();
+      const user = config.UserConfig.Users.find((u) => u.username === username);
+
+      if (user && user.banned) {
+        return NextResponse.json({ error: '用户被封禁' }, { status: 401 });
+      }
+
+      // 尝试去数据库校验普通用户
       const pass = await db.verifyUser(username, password);
       if (!pass) {
         return NextResponse.json(
@@ -178,32 +159,35 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // 验证成功，设置认证cookie
+      // 验证成功
       const response = NextResponse.json({ ok: true });
       const cookieValue = await generateAuthCookie(
         username,
         password,
         user?.role || 'user',
         false
-      ); // 数据库模式不包含 password
+      );
       const expires = new Date();
-      expires.setDate(expires.getDate() + 7); // 7天过期
+      expires.setDate(expires.getDate() + 7);
 
       response.cookies.set('auth', cookieValue, {
         path: '/',
         expires,
-        sameSite: 'lax', // 改为 lax 以支持 PWA
-        httpOnly: false, // PWA 需要客户端可访问
-        secure: false, // 根据协议自动设置
+        sameSite: 'lax',
+        httpOnly: false,
+        secure: false,
       });
 
       return response;
     } catch (err) {
       console.error('数据库验证失败', err);
-      return NextResponse.json({ error: '数据库错误' }, { status: 500 });
+      return NextResponse.json(
+        { error: '系统环境异常，请使用环境变量管理员账号登录' },
+        { status: 500 }
+      );
     }
   } catch (error) {
     console.error('登录接口异常', error);
-    return NextResponse.json({ error: '服务器错误' }, { status: 500 });
+    return NextResponse.json({ error: '服务器内部错误' }, { status: 500 });
   }
 }

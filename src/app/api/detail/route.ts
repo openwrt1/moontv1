@@ -37,9 +37,13 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
+    console.error(
+      `[Detail API Error] source: ${sourceCode}, id: ${id} ->`,
+      (error as Error).message
+    );
     return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 500 }
+      { error: (error as Error).message || '获取视频详情失败' },
+      { status: 502 } // 502 Bad Gateway 表示这是上游服务器引起的问题
     );
   }
 }

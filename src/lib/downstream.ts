@@ -236,18 +236,33 @@ export async function getDetailFromApi(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  const response = await fetch(detailUrl, {
-    headers: API_CONFIG.detail.headers,
-    signal: controller.signal,
-  });
-
-  clearTimeout(timeoutId);
-
-  if (!response.ok) {
-    throw new Error(`详情请求失败: ${response.status}`);
+  let response;
+  try {
+    response = await fetch(detailUrl, {
+      headers: API_CONFIG.detail.headers,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    throw new Error(`源站连接失败或超时: ${(error as Error).message}`);
+  } finally {
+    clearTimeout(timeoutId);
   }
 
-  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(`源站返回错误状态码: ${response.status}`);
+  }
+
+  const text = await response.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (error) {
+    console.error(
+      `[Downstream] 🚫 源 [${apiSite.name}] 详情解析失败，内容片段:`,
+      text.substring(0, 100)
+    );
+    throw new Error('源站返回了非标准数据格式(可能被防盗链拦截或已失效)');
+  }
 
   if (
     !data ||
@@ -255,7 +270,7 @@ export async function getDetailFromApi(
     !Array.isArray(data.list) ||
     data.list.length === 0
   ) {
-    throw new Error('获取到的详情内容无效');
+    throw new Error('源站未返回有效的视频详情');
   }
 
   const videoDetail = data.list[0];
@@ -311,15 +326,20 @@ async function handleSpecialSourceDetail(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  const response = await fetch(detailUrl, {
-    headers: API_CONFIG.detail.headers,
-    signal: controller.signal,
-  });
-
-  clearTimeout(timeoutId);
+  let response;
+  try {
+    response = await fetch(detailUrl, {
+      headers: API_CONFIG.detail.headers,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    throw new Error(`源站连接失败或超时: ${(error as Error).message}`);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
-    throw new Error(`详情页请求失败: ${response.status}`);
+    throw new Error(`源站页面请求失败: ${response.status}`);
   }
 
   const html = await response.text();

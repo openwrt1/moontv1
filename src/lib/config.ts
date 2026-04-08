@@ -141,7 +141,7 @@ async function initConfig() {
           username: uname,
           role: 'user',
         }));
-        const ownerUser = process.env.USERNAME;
+        const ownerUser = process.env.ADMIN_USERNAME || process.env.USERNAME;
         if (ownerUser) {
           allUsers = allUsers.filter((u) => u.username !== ownerUser);
           allUsers.unshift({
@@ -266,7 +266,7 @@ export async function getConfig(): Promise<AdminConfig> {
       }
     });
 
-    const ownerUser = process.env.USERNAME || '';
+    const ownerUser = process.env.ADMIN_USERNAME || process.env.USERNAME || '';
     // 检查配置中的站长用户是否和 USERNAME 匹配，如果不匹配则降级为普通用户
     let containOwner = false;
     adminConfig.UserConfig.Users.forEach((user) => {
@@ -327,7 +327,7 @@ export async function resetConfig() {
     username: uname,
     role: 'user',
   }));
-  const ownerUser = process.env.USERNAME;
+  const ownerUser = process.env.ADMIN_USERNAME || process.env.USERNAME;
   if (ownerUser) {
     allUsers = allUsers.filter((u) => u.username !== ownerUser);
     allUsers.unshift({

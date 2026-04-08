@@ -125,10 +125,6 @@
       "api": "https://collect.wolongzyw.com/api.php/provide/vod",
       "name": "卧龙采集"
     },
-    "baofeng2": {
-      "api": "https://app.bfzyapi.com/api.php/provide/vod",
-      "name": "暴风APP"
-    },
     "uku88": {
       "api": "https://api.ukuapi88.com/api.php/provide/vod",
       "name": "U酷资源88"
