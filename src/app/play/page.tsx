@@ -1144,8 +1144,8 @@ function PlayPageClient() {
         }
 
         // 创建新的播放器实例
-        Artplayer.PLAYBACK_RATE = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
-        Artplayer.USE_RAF = true;
+        (Artplayer as any).PLAYBACK_RATE = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
+        (Artplayer as any).USE_RAF = true;
 
         artPlayerRef.current = new Artplayer({
           container: artRef.current,

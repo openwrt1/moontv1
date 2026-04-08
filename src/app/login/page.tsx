@@ -80,7 +80,6 @@ function LoginPageClient() {
   // 在客户端挂载后设置配置
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storageType = (window as any).RUNTIME_CONFIG?.STORAGE_TYPE;
       setEnableRegister(
         Boolean((window as any).RUNTIME_CONFIG?.ENABLE_REGISTER)
       );
