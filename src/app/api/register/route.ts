@@ -50,8 +50,11 @@ async function generateAuthCookie(username: string): Promise<string> {
     timestamp: Date.now(),
   };
 
-  // 使用process.env.PASSWORD作为签名密钥，而不是用户密码
-  const signingKey = process.env.PASSWORD || '';
+  // 兼容 USERNAME/PASSWORD 或 ADMIN_USERNAME/ADMIN_PASSWORD，并提供兜底密钥防崩溃
+  const signingKey =
+    process.env.PASSWORD ||
+    process.env.ADMIN_PASSWORD ||
+    'default_moon_tv_secret';
   const signature = await generateSignature(username, signingKey);
   authData.signature = signature;
 
@@ -84,7 +87,8 @@ export async function POST(req: NextRequest) {
     }
 
     // 检查是否和管理员重复
-    if (username === process.env.USERNAME) {
+    const adminUsername = process.env.USERNAME || process.env.ADMIN_USERNAME;
+    if (username === adminUsername) {
       return NextResponse.json({ error: '用户已存在' }, { status: 400 });
     }
 
@@ -121,10 +125,24 @@ export async function POST(req: NextRequest) {
       return response;
     } catch (err) {
       console.error('数据库注册失败', err);
-      return NextResponse.json({ error: '数据库错误' }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: `数据库错误: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        },
+        { status: 500 }
+      );
     }
   } catch (error) {
     console.error('注册接口异常', error);
-    return NextResponse.json({ error: '服务器错误' }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: `服务器错误: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      },
+      { status: 500 }
+    );
   }
 }
