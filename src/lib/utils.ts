@@ -34,21 +34,10 @@ export function getImageProxyUrl(): string | null {
 export function processImageUrl(originalUrl: string): string {
   if (!originalUrl) return originalUrl;
 
-  // 检查是否是豆瓣图片
-  if (originalUrl.includes('doubanio.com')) {
-    const doubanProxyUrl = getDoubanProxyUrl();
-    if (doubanProxyUrl) {
-      return `${doubanProxyUrl}${encodeURIComponent(originalUrl)}`;
-    }
-  }
+  const proxyUrl = getImageProxyUrl();
+  if (!proxyUrl) return originalUrl;
 
-  // 否则，使用通用图片代理
-  const imageProxyUrl = getImageProxyUrl();
-  if (imageProxyUrl) {
-    return `${imageProxyUrl}${encodeURIComponent(originalUrl)}`;
-  }
-
-  return originalUrl;
+  return `${proxyUrl}${encodeURIComponent(originalUrl)}`;
 }
 
 /**
