@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
     }
 
     const records = await db.getAllPlayRecords(authInfo.username);
+    console.log(
+      `👉 [PlayRecords GET] 获取用户 ${authInfo.username} 的全部记录成功`
+    );
     return NextResponse.json(records, { status: 200 });
   } catch (err) {
     console.error('获取播放记录失败', err);
@@ -36,17 +39,29 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log(
+      `👉 [PlayRecords POST] 收到用户 ${authInfo.username} 的保存请求:`,
+      body
+    );
+
     const { key, record }: { key: string; record: PlayRecord } = body;
 
     if (!key || !record) {
+      console.log('❌ [PlayRecords POST] 缺少 key 或 record 数据');
       return NextResponse.json(
         { error: 'Missing key or record' },
         { status: 400 }
       );
     }
 
-    // 验证播放记录数据
-    if (!record.title || !record.source_name || record.index < 1) {
+    // 验证播放记录数据 (修复：允许 index 为 0，因为很多播放器第一集索引是 0)
+    if (
+      !record.title ||
+      !record.source_name ||
+      typeof record.index !== 'number' ||
+      record.index < 0
+    ) {
+      console.log('❌ [PlayRecords POST] 数据验证失败:', record);
       return NextResponse.json(
         { error: 'Invalid record data' },
         { status: 400 }
@@ -56,6 +71,7 @@ export async function POST(request: NextRequest) {
     // 从key中解析source和id
     const [source, id] = key.split('+');
     if (!source || !id) {
+      console.log(`❌ [PlayRecords POST] Invalid key format: ${key}`);
       return NextResponse.json(
         { error: 'Invalid key format' },
         { status: 400 }
@@ -68,6 +84,11 @@ export async function POST(request: NextRequest) {
     } as PlayRecord;
 
     await db.savePlayRecord(authInfo.username, source, id, finalRecord);
+    console.log(
+      `✅ [PlayRecords POST] 成功保存 ${authInfo.username} 的播放记录:`,
+      source,
+      id
+    );
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
