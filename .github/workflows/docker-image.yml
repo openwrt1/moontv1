@@ -51,15 +51,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set lowercase repository owner
+      - name: Set lowercase repository
         id: lowercase
-        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+        run: echo "repo=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }} # 使用 github.repository 确保镜像名称与仓库匹配
+          images: ghcr.io/${{ steps.lowercase.outputs.repo }}
           tags: |
             type=ref,event=pr
             type=raw,value=latest,enable={{is_default_branch}}
@@ -72,7 +72,7 @@ jobs:
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=ghcr.io/${{ github.repository }},push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }} # 使用 github.repository
+          outputs: type=image,name=ghcr.io/${{ steps.lowercase.outputs.repo }},push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }}
 
       - name: Export digest
         run: |
@@ -111,15 +111,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set lowercase repository owner
+      - name: Set lowercase repository
         id: lowercase
-        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+        run: echo "repo=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }} # 使用 github.repository
+          images: ghcr.io/${{ steps.lowercase.outputs.repo }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -130,11 +130,11 @@ jobs:
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf 'ghcr.io/${{ github.repository }}@sha256:%s ' *) # 使用 github.repository
+            $(printf 'ghcr.io/${{ steps.lowercase.outputs.repo }}@sha256:%s ' *)
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }} # 使用 github.repository
+          docker buildx imagetools inspect ghcr.io/${{ steps.lowercase.outputs.repo }}:${{ steps.meta.outputs.version }}
 
   cleanup:
     runs-on: ubuntu-latest
