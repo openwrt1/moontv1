@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 import { NextResponse } from 'next/server';
 
 import { getCacheTime } from '@/lib/config';
@@ -19,101 +21,228 @@ interface DoubanCategoryApiResponse {
   }>;
 }
 
-async function fetchDoubanData(
-  url: string
-): Promise<DoubanCategoryApiResponse> {
-  // 添加超时控制
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+interface DoubanSearchSubjectsResponse {
+  subjects: Array<{
+    id: string;
+    title: string;
+    cover: string;
+    rate: string;
+  }>;
+}
 
-  // 设置请求选项，包括信号和头部
-  const fetchOptions = {
-    signal: controller.signal,
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-      Referer: 'https://movie.douban.com/',
-      Accept: 'application/json, text/plain, */*',
-      Origin: 'https://movie.douban.com',
-    },
+function getBaseHeaders(includeOrigin = true): HeadersInit {
+  const headers: HeadersInit = {
+    'User-Agent':
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    Referer: 'https://movie.douban.com/',
+    Accept: 'application/json, text/plain, */*',
   };
 
+  if (includeOrigin) {
+    headers['Origin'] = 'https://movie.douban.com';
+  }
+
+  return headers;
+}
+
+async function fetchWithTimeout(
+  url: string,
+  headers: HeadersInit
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
   try {
-    // 尝试直接访问豆瓣API
-    const response = await fetch(url, fetchOptions);
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers,
+    });
     clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    return await response.json();
+    return response;
   } catch (error) {
     clearTimeout(timeoutId);
     throw error;
   }
 }
 
+function mapRexxarItems(doubanData: DoubanCategoryApiResponse): DoubanItem[] {
+  return doubanData.items.map((item) => ({
+    id: item.id,
+    title: item.title,
+    poster: item.pic?.normal || item.pic?.large || '',
+    rate: item.rating?.value ? item.rating.value.toFixed(1) : '',
+    year: item.card_subtitle?.match(/(\d{4})/)?.[1] || '',
+  }));
+}
+
+function mapSearchSubjectsItems(
+  doubanData: DoubanSearchSubjectsResponse
+): DoubanItem[] {
+  return (doubanData.subjects || []).map((item) => ({
+    id: item.id,
+    title: item.title,
+    poster: item.cover || '',
+    rate: item.rate || '',
+    year: '',
+  }));
+}
+
+function getFallbackTag(
+  kind: 'tv' | 'movie',
+  category: string,
+  type: string
+): string {
+  if (kind === 'movie') {
+    return category || '\u70ed\u95e8';
+  }
+
+  if (type === 'show' || category === 'show') {
+    return '\u7efc\u827a';
+  }
+
+  return '\u7535\u89c6\u5267';
+}
+
+async function fetchDoubanData(
+  kind: 'tv' | 'movie',
+  category: string,
+  type: string,
+  pageStart: number,
+  pageLimit: number,
+  requestId: string
+): Promise<DoubanItem[]> {
+  const rexxarUrl = `https://m.douban.com/rexxar/api/v2/subject/recent_hot/${kind}?start=${pageStart}&limit=${pageLimit}&category=${encodeURIComponent(
+    category
+  )}&type=${encodeURIComponent(type)}`;
+
+  const attempts: Array<{
+    name: string;
+    url: string;
+    headers: HeadersInit;
+    parser: (payload: unknown) => DoubanItem[];
+  }> = [
+    {
+      name: 'rexxar_with_origin',
+      url: rexxarUrl,
+      headers: getBaseHeaders(true),
+      parser: (payload) => mapRexxarItems(payload as DoubanCategoryApiResponse),
+    },
+    {
+      name: 'rexxar_without_origin',
+      url: rexxarUrl,
+      headers: getBaseHeaders(false),
+      parser: (payload) => mapRexxarItems(payload as DoubanCategoryApiResponse),
+    },
+    {
+      name: 'search_subjects_fallback',
+      url: `https://movie.douban.com/j/search_subjects?type=${kind}&tag=${encodeURIComponent(
+        getFallbackTag(kind, category, type)
+      )}&sort=recommend&page_limit=${pageLimit}&page_start=${pageStart}`,
+      headers: getBaseHeaders(false),
+      parser: (payload) =>
+        mapSearchSubjectsItems(payload as DoubanSearchSubjectsResponse),
+    },
+  ];
+
+  let lastError: Error | null = null;
+
+  for (const attempt of attempts) {
+    try {
+      console.log(
+        `[DoubanCategories][${requestId}] attempt=${attempt.name} start url=${attempt.url}`
+      );
+
+      const response = await fetchWithTimeout(attempt.url, attempt.headers);
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        console.warn(
+          `[DoubanCategories][${requestId}] attempt=${attempt.name} status=${
+            response.status
+          } body=${body.slice(0, 200)}`
+        );
+        lastError = new Error(`HTTP ${response.status}`);
+        continue;
+      }
+
+      const payload = await response.json();
+      const list = attempt.parser(payload);
+      if (!Array.isArray(list) || list.length === 0) {
+        console.warn(
+          `[DoubanCategories][${requestId}] attempt=${attempt.name} returned empty list`
+        );
+      }
+
+      console.log(
+        `[DoubanCategories][${requestId}] attempt=${attempt.name} success count=${list.length}`
+      );
+      return list;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `[DoubanCategories][${requestId}] attempt=${attempt.name} exception=${message}`
+      );
+      lastError = error instanceof Error ? error : new Error(message);
+    }
+  }
+
+  throw lastError || new Error('All douban attempts failed');
+}
+
 export const runtime = 'edge';
 
 export async function GET(request: Request) {
+  const requestId = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
   const { searchParams } = new URL(request.url);
 
-  // 获取参数
-  const kind = searchParams.get('kind') || 'movie';
+  const kind = (searchParams.get('kind') || 'movie') as 'tv' | 'movie';
   const category = searchParams.get('category');
   const type = searchParams.get('type');
   const pageLimit = parseInt(searchParams.get('limit') || '20');
   const pageStart = parseInt(searchParams.get('start') || '0');
 
-  // 验证参数
   if (!kind || !category || !type) {
     return NextResponse.json(
-      { error: '缺少必要参数: kind 或 category 或 type' },
+      { error: 'Missing required params: kind/category/type' },
       { status: 400 }
     );
   }
 
   if (!['tv', 'movie'].includes(kind)) {
     return NextResponse.json(
-      { error: 'kind 参数必须是 tv 或 movie' },
+      { error: 'kind must be tv or movie' },
       { status: 400 }
     );
   }
 
   if (pageLimit < 1 || pageLimit > 100) {
     return NextResponse.json(
-      { error: 'pageSize 必须在 1-100 之间' },
+      { error: 'limit must be within 1-100' },
       { status: 400 }
     );
   }
 
   if (pageStart < 0) {
-    return NextResponse.json(
-      { error: 'pageStart 不能小于 0' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'start must be >= 0' }, { status: 400 });
   }
 
-  const target = `https://m.douban.com/rexxar/api/v2/subject/recent_hot/${kind}?start=${pageStart}&limit=${pageLimit}&category=${category}&type=${type}`;
-
   try {
-    // 调用豆瓣 API
-    const doubanData = await fetchDoubanData(target);
+    console.log(
+      `[DoubanCategories][${requestId}] request kind=${kind} category=${category} type=${type} start=${pageStart} limit=${pageLimit}`
+    );
 
-    // 转换数据格式
-    const list: DoubanItem[] = doubanData.items.map((item) => ({
-      id: item.id,
-      title: item.title,
-      poster: item.pic?.normal || item.pic?.large || '',
-      rate: item.rating?.value ? item.rating.value.toFixed(1) : '',
-      year: item.card_subtitle?.match(/(\d{4})/)?.[1] || '',
-    }));
+    const list = await fetchDoubanData(
+      kind,
+      category,
+      type,
+      pageStart,
+      pageLimit,
+      requestId
+    );
 
     const response: DoubanResult = {
       code: 200,
-      message: '获取成功',
-      list: list,
+      message: 'ok',
+      list,
     };
 
     const cacheTime = await getCacheTime();
@@ -125,8 +254,11 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
+    const details = error instanceof Error ? error.message : String(error);
+    console.error(`[DoubanCategories][${requestId}] failed details=${details}`);
+
     return NextResponse.json(
-      { error: '获取豆瓣数据失败', details: (error as Error).message },
+      { error: 'Failed to fetch douban categories', details },
       { status: 500 }
     );
   }

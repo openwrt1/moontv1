@@ -1745,6 +1745,15 @@ function PlayPageClient() {
                     src={processImageUrl(videoCover)}
                     alt={videoTitle}
                     className='w-full h-full object-cover'
+                    onError={() => {
+                      console.warn('[PlayCover] failed', {
+                        source: currentSource || 'unknown',
+                        id: currentId || 'unknown',
+                        title: videoTitle || 'unknown',
+                        originalCover: videoCover || '',
+                        finalCover: processImageUrl(videoCover) || '',
+                      });
+                    }}
                   />
                 ) : (
                   <span className='text-gray-600 dark:text-gray-400'>

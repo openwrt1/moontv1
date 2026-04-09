@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
 
 import { CheckCircle, Heart, Link, PlayCircleIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -111,6 +111,7 @@ export default function VideoCard({
       ? 'movie'
       : 'tv'
     : type;
+  const processedPoster = processImageUrl(actualPoster);
 
   // 获取收藏状态
   useEffect(() => {
@@ -278,12 +279,23 @@ export default function VideoCard({
         {!isLoading && <ImagePlaceholder aspectRatio='aspect-[2/3]' />}
         {/* 图片 */}
         <Image
-          src={processImageUrl(actualPoster)}
+          src={processedPoster}
           alt={actualTitle}
           fill
           className='object-cover'
           referrerPolicy='no-referrer'
           onLoad={() => setIsLoading(true)}
+          onError={() => {
+            console.warn('[ImageLoad] failed', {
+              from,
+              source: actualSource || 'unknown',
+              source_name: source_name || 'unknown',
+              id: actualId || 'unknown',
+              title: actualTitle || 'unknown',
+              originalPoster: actualPoster || '',
+              finalPoster: processedPoster || '',
+            });
+          }}
         />
 
         {/* 悬浮遮罩 */}

@@ -65,26 +65,42 @@ function HomeClient() {
         setLoading(true);
 
         // 并行获取热门电影、热门剧集和热门综艺
-        const [moviesData, tvShowsData, varietyShowsData] = await Promise.all([
-          getDoubanCategories({
-            kind: 'movie',
-            category: '热门',
-            type: '全部',
-          }),
-          getDoubanCategories({ kind: 'tv', category: 'tv', type: 'tv' }),
-          getDoubanCategories({ kind: 'tv', category: 'show', type: 'show' }),
-        ]);
+        const [moviesData, tvShowsData, varietyShowsData] =
+          await Promise.allSettled([
+            getDoubanCategories({
+              kind: 'movie',
+              category: '热门',
+              type: '全部',
+            }),
+            getDoubanCategories({ kind: 'tv', category: 'tv', type: 'tv' }),
+            getDoubanCategories({ kind: 'tv', category: 'show', type: 'show' }),
+          ]);
 
-        if (moviesData.code === 200) {
-          setHotMovies(moviesData.list);
+        if (
+          moviesData.status === 'fulfilled' &&
+          moviesData.value.code === 200
+        ) {
+          setHotMovies(moviesData.value.list);
+        } else if (moviesData.status === 'rejected') {
+          console.error('热门电影获取失败:', moviesData.reason);
         }
 
-        if (tvShowsData.code === 200) {
-          setHotTvShows(tvShowsData.list);
+        if (
+          tvShowsData.status === 'fulfilled' &&
+          tvShowsData.value.code === 200
+        ) {
+          setHotTvShows(tvShowsData.value.list);
+        } else if (tvShowsData.status === 'rejected') {
+          console.error('热门剧集获取失败:', tvShowsData.reason);
         }
 
-        if (varietyShowsData.code === 200) {
-          setHotVarietyShows(varietyShowsData.list);
+        if (
+          varietyShowsData.status === 'fulfilled' &&
+          varietyShowsData.value.code === 200
+        ) {
+          setHotVarietyShows(varietyShowsData.value.list);
+        } else if (varietyShowsData.status === 'rejected') {
+          console.error('热门综艺获取失败:', varietyShowsData.reason);
         }
       } catch (error) {
         console.error('获取豆瓣数据失败:', error);
