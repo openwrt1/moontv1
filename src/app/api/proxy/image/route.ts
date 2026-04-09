@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Missing url parameter', { status: 400 });
   }
 
-  return new Promise((resolve) => {
+  return new Promise<NextResponse>((resolve) => {
     const isHttps = url.startsWith('https');
     const client = isHttps ? https : http;
 

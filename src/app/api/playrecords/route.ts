@@ -1,60 +1,146 @@
-import http from 'http';
-import https from 'https';
+/* eslint-disable no-console */
+
 import { NextRequest, NextResponse } from 'next/server';
 
-// 必须使用 Node 运行时，Edge 运行时不支持直接调用 https 模块
-export const runtime = 'nodejs';
+import { getAuthInfoFromCookie } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { PlayRecord } from '@/lib/types';
+
+export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
-  const url = request.nextUrl.searchParams.get('url');
+  try {
+    // 从 cookie 获取用户信息
+    const authInfo = getAuthInfoFromCookie(request);
+    if (!authInfo || !authInfo.username) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-  if (!url) {
-    return new NextResponse('Missing url parameter', { status: 400 });
+    const records = await db.getAllPlayRecords(authInfo.username);
+    console.log(
+      `👉 [PlayRecords GET] 获取用户 ${authInfo.username} 的全部记录成功`
+    );
+    return NextResponse.json(records, { status: 200 });
+  } catch (err) {
+    console.error('获取播放记录失败', err);
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 }
+    );
   }
+}
 
-  return new Promise((resolve) => {
-    const isHttps = url.startsWith('https');
-    const client = isHttps ? https : http;
+export async function POST(request: NextRequest) {
+  try {
+    // 从 cookie 获取用户信息
+    const authInfo = getAuthInfoFromCookie(request);
+    if (!authInfo || !authInfo.username) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // 这里的核心：rejectUnauthorized: false 忽略后端请求时的证书错误
-    const options = isHttps ? { rejectUnauthorized: false } : {};
+    const body = await request.json();
+    console.log(
+      `👉 [PlayRecords POST] 收到用户 ${authInfo.username} 的保存请求:`,
+      body
+    );
 
-    client
-      .get(url, options, (res) => {
-        // 处理源站重定向
-        if (
-          res.statusCode &&
-          res.statusCode >= 300 &&
-          res.statusCode < 400 &&
-          res.headers.location
-        ) {
-          return resolve(NextResponse.redirect(res.headers.location));
-        }
+    const { key, record }: { key: string; record: PlayRecord } = body;
 
-        if (res.statusCode !== 200) {
-          return resolve(
-            new NextResponse('Failed to fetch image', {
-              status: res.statusCode,
-            })
-          );
-        }
+    if (!key || !record) {
+      console.log('❌ [PlayRecords POST] 缺少 key 或 record 数据');
+      return NextResponse.json(
+        { error: 'Missing key or record' },
+        { status: 400 }
+      );
+    }
 
-        const headers = new Headers();
-        if (res.headers['content-type']) {
-          headers.set('Content-Type', res.headers['content-type']);
-        }
-        headers.set('Cache-Control', 'public, max-age=86400'); // 缓存一天
+    // 验证播放记录数据 (修复：允许 index 为 0，因为很多播放器第一集索引是 0)
+    if (
+      !record.title ||
+      !record.source_name ||
+      typeof record.index !== 'number' ||
+      record.index < 0
+    ) {
+      console.log('❌ [PlayRecords POST] 数据验证失败:', record);
+      return NextResponse.json(
+        { error: 'Invalid record data' },
+        { status: 400 }
+      );
+    }
 
-        // 将 Node.js 的流转换为 Web Stream 以便 Next.js 响应
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const { Readable } = require('stream');
-        const webStream = Readable.toWeb(res);
+    // 从key中解析source和id
+    const [source, id] = key.split('+');
+    if (!source || !id) {
+      console.log(`❌ [PlayRecords POST] Invalid key format: ${key}`);
+      return NextResponse.json(
+        { error: 'Invalid key format' },
+        { status: 400 }
+      );
+    }
 
-        resolve(new NextResponse(webStream as any, { headers }));
-      })
-      .on('error', (err) => {
-        console.error('[Image Proxy] Error fetching image:', err);
-        resolve(new NextResponse('Error fetching image', { status: 500 }));
-      });
-  });
+    const finalRecord = {
+      ...record,
+      save_time: record.save_time ?? Date.now(),
+    } as PlayRecord;
+
+    await db.savePlayRecord(authInfo.username, source, id, finalRecord);
+    console.log(
+      `✅ [PlayRecords POST] 成功保存 ${authInfo.username} 的播放记录:`,
+      source,
+      id
+    );
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (err) {
+    console.error('保存播放记录失败', err);
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    // 从 cookie 获取用户信息
+    const authInfo = getAuthInfoFromCookie(request);
+    if (!authInfo || !authInfo.username) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const username = authInfo.username;
+    const { searchParams } = new URL(request.url);
+    const key = searchParams.get('key');
+
+    if (key) {
+      // 如果提供了 key，删除单条播放记录
+      const [source, id] = key.split('+');
+      if (!source || !id) {
+        return NextResponse.json(
+          { error: 'Invalid key format' },
+          { status: 400 }
+        );
+      }
+
+      await db.deletePlayRecord(username, source, id);
+    } else {
+      // 未提供 key，则清空全部播放记录
+      // 目前 DbManager 没有对应方法，这里直接遍历删除
+      const all = await db.getAllPlayRecords(username);
+      await Promise.all(
+        Object.keys(all).map(async (k) => {
+          const [s, i] = k.split('+');
+          if (s && i) await db.deletePlayRecord(username, s, i);
+        })
+      );
+    }
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (err) {
+    console.error('删除播放记录失败', err);
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 }
+    );
+  }
 }
