@@ -168,6 +168,17 @@ function PlayPageClient() {
   // 工具函数（Utils）
   // -----------------------------------------------------------------------------
 
+  // 自动注入 no-referrer，绕过大部分国内视频源站的防盗链 (403错误)
+  useEffect(() => {
+    let meta = document.querySelector('meta[name="referrer"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'referrer');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', 'no-referrer');
+  }, []);
+
   // 播放源优选函数
   const preferBestSource = async (
     sources: SearchResult[]

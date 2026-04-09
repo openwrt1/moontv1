@@ -76,11 +76,15 @@ export default function WarningPage() {
               🔒 安全配置建议
             </h3>
             <p className='text-sm sm:text-base text-yellow-700'>
-              请立即配置{' '}
+              请立即配置环境变量{' '}
+              <code className='bg-yellow-100 px-1.5 py-0.5 rounded text-xs sm:text-sm font-mono'>
+                ADMIN_PASSWORD
+              </code>{' '}
+              或{' '}
               <code className='bg-yellow-100 px-1.5 py-0.5 rounded text-xs sm:text-sm font-mono'>
                 PASSWORD
               </code>{' '}
-              环境变量以启用访问控制。
+              以启用访问控制。
             </p>
           </div>
         </div>
