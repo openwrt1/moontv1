@@ -1,0 +1,1 @@
+var n={},d=(c,s,a)=>(n.__chunk_53239=(_,r,l)=>{"use strict";function o(u){let e=u.cookies.get("auth");if(!e)return null;try{let t=decodeURIComponent(e.value);return JSON.parse(t)}catch{return null}}l.d(r,{l:()=>o})},n);export{d as __getNamedExports};

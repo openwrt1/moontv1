@@ -20,8 +20,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # 提供临时的构建期环境变量，防止 Next.js 在预渲染 API 时因找不到变量而崩溃
-ENV UPSTASH_URL="https://dummy-for-build.upstash.io"
-ENV UPSTASH_TOKEN="dummy_token"
+ENV UPSTASH_URL="https://wealthy-goat-94638.upstash.io"
+ENV UPSTASH_TOKEN="gQAAAAAAAXGuAAIncDFiZTUxNmNhYTkyNzI0MmM4OGE1M2JhYmU2MzUyZjY1Y3AxOTQ2Mzg"
 
 # 执行构建命令
 RUN pnpm run build

@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST="{\"app\\\\play\\\\page.tsx -> artplayer\":{\"id\":\"app\\\\play\\\\page.tsx -> artplayer\",\"files\":[\"static/chunks/_app-pages-browser_node_modules_pnpm_artplayer_5_3_0_node_modules_artplayer_dist_artplayer_mjs.js\"]},\"app\\\\play\\\\page.tsx -> hls.js\":{\"id\":\"app\\\\play\\\\page.tsx -> hls.js\",\"files\":[]}}"

@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  moontv:
+    image: my-moontv:latest
+    container_name: moontv-app
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      # ==========================================
+      # 必填环境变量
+      # ==========================================
+      - NEXT_PUBLIC_IMAGE_PROXY=https://test.peng52.dpdns.org/
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+
+      - UPSTASH_URL=${UPSTASH_URL}
+      - UPSTASH_TOKEN=${UPSTASH_TOKEN}
+
+      # 2. NextAuth.js 配置 (用于登录授权)
+      # 请在终端运行 `openssl rand -base64 32` 生成一个随机字符串替换下面的值
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      # 你的应用最终访问地址，本地测试就用 localhost
+      - NEXTAUTH_URL=http://localhost:3000
+      # ==========================================
+      # 可选环境变量 (根据你的项目需求取消注释)
+      # ==========================================
+
+      # 3. 数据库配置 (如果你的项目用到了 Prisma/Drizzle 等 ORM 连接数据库)
+      # - DATABASE_URL=postgresql://user:password@host:port/dbname
+
+      # 4. 网络代理配置
+      # 如果容器内部访问外部 API (如 GitHub 授权、获取流媒体源) 遇到网络不通的问题
+      # 注意：在 Docker 容器里访问宿主机的代理，通常不能用 127.0.0.1，
+      # Windows 宿主机一般可以使用 host.docker.internal
+      # - HTTP_PROXY=http://host.docker.internal:10808
+      # - HTTPS_PROXY=http://host.docker.internal:10808
+      # - ALL_PROXY=socks5://host.docker.internal:10808
