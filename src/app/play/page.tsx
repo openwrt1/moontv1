@@ -508,26 +508,80 @@ function PlayPageClient() {
         }
         const data = await response.json();
 
-        // 处理搜索结果，根据规则过滤
-        const results = (data.results || []).filter(
-          (result: SearchResult) =>
+        const allResults = (data.results || []) as SearchResult[];
+        const normalizeTitle = (value: string) =>
+          value
+            .replace(/\s+/g, '')
+            .replace(/[·:：\-_.]/g, '')
+            .toLowerCase();
+        const targetTitle = normalizeTitle(videoTitleRef.current || '');
+        const targetYear = (videoYearRef.current || '').toLowerCase();
+        const hasTargetYear = Boolean(targetYear);
+        const hasSearchType = Boolean(searchType);
+
+        const byType = (result: SearchResult) =>
+          !hasSearchType
+            ? true
+            : (searchType === 'tv' && (result.episodes?.length || 0) > 1) ||
+              (searchType === 'movie' && (result.episodes?.length || 0) === 1);
+
+        const byExactTitle = (result: SearchResult) =>
+          normalizeTitle(result.title || '') === targetTitle;
+
+        const byLooseTitle = (result: SearchResult) => {
+          const current = normalizeTitle(result.title || '');
+          return current.includes(targetTitle) || targetTitle.includes(current);
+        };
+
+        const byYear = (result: SearchResult) =>
+          !hasTargetYear || (result.year || '').toLowerCase() === targetYear;
+
+        // 第一层：标题精确 + 年份精确 + 类型
+        let results = allResults.filter(
+          (result) =>
             result &&
             result.title &&
-            result.title.replaceAll(' ', '').toLowerCase() ===
-              videoTitleRef.current.replaceAll(' ', '').toLowerCase() &&
-            (videoYearRef.current
-              ? result.year?.toLowerCase() ===
-                videoYearRef.current.toLowerCase()
-              : true) &&
-            (searchType
-              ? (searchType === 'tv' && (result.episodes?.length || 0) > 1) ||
-                (searchType === 'movie' && (result.episodes?.length || 0) === 1)
-              : true)
+            byType(result) &&
+            byExactTitle(result) &&
+            byYear(result)
         );
+
+        // 第二层：标题精确 + 类型（放宽年份）
+        if (results.length === 0) {
+          results = allResults.filter(
+            (result) =>
+              result && result.title && byType(result) && byExactTitle(result)
+          );
+        }
+
+        // 第三层：标题宽松 + 类型（处理轻微命名差异）
+        if (results.length === 0) {
+          results = allResults.filter(
+            (result) =>
+              result && result.title && byType(result) && byLooseTitle(result)
+          );
+        }
+
+        console.log('[PlaySearchMatch] summary', {
+          query,
+          total: allResults.length,
+          matched: results.length,
+          title: videoTitleRef.current,
+          year: videoYearRef.current || '',
+          stype: searchType || '',
+        });
         setAvailableSources(results);
         return results;
       } catch (err) {
-        setSourceSearchError(err instanceof Error ? err.message : '搜索失败');
+        const errorMessage = err instanceof Error ? err.message : '搜索失败';
+        setSourceSearchError(errorMessage);
+        console.warn('[PlaySearchMatch] fetch failed', {
+          query,
+          title: videoTitleRef.current,
+          year: videoYearRef.current || '',
+          stype: searchType || '',
+          error: errorMessage,
+        });
         setAvailableSources([]);
         return [];
       } finally {
