@@ -24,7 +24,13 @@ export async function GET(request: Request) {
   }
 
   const apiSites = await getAvailableApiSites();
-  const searchPromises = apiSites.map((site) => searchFromApi(site, query));
+  const requestId = `${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+  console.log(`[SearchAPI][${requestId}] q=${query}`);
+  const searchPromises = apiSites.map((site) =>
+    searchFromApi(site, query, { requestId, originalQuery: query })
+  );
 
   try {
     const results = await Promise.all(searchPromises);

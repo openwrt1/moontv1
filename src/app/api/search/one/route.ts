@@ -40,7 +40,16 @@ export async function GET(request: Request) {
       );
     }
 
-    const results = await searchFromApi(targetSite, query);
+    const requestId = `${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    console.log(
+      `[SearchOneAPI][${requestId}] q=${query} resourceId=${resourceId}`
+    );
+    const results = await searchFromApi(targetSite, query, {
+      requestId,
+      originalQuery: query,
+    });
     const result = results.filter((r) => r.title === query);
     const cacheTime = await getCacheTime();
 

@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+﻿/* eslint-disable no-console */
 import { API_CONFIG, ApiSite, getConfig } from '@/lib/config';
 import { SearchResult } from '@/lib/types';
 import { cleanHtmlTags } from '@/lib/utils';
@@ -16,14 +16,27 @@ interface ApiSearchItem {
   type_name?: string;
 }
 
+interface SearchLogContext {
+  requestId?: string;
+  originalQuery?: string;
+}
+
+function getResponsePreview(text: string, maxLength = 300): string {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength)}...`;
+}
+
 export async function searchFromApi(
   apiSite: ApiSite,
-  query: string
+  query: string,
+  context?: SearchLogContext
 ): Promise<SearchResult[]> {
   try {
-    console.log(
-      `[Downstream] 🔍 正在搜索源 [${apiSite.name}] 关键字: ${query}`
-    );
+    const prefix = context?.requestId
+      ? `[Downstream][${context.requestId}]`
+      : '[Downstream]';
+    console.log(`${prefix} 🔍 正在搜索源 [${apiSite.name}] 关键字: ${query}`);
     const apiBaseUrl = apiSite.api;
     const apiUrl =
       apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(query);
@@ -41,8 +54,26 @@ export async function searchFromApi(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      const bodyText = await response.text().catch(() => '');
+      const contentType = response.headers.get('content-type') || 'unknown';
       console.warn(
-        `[Downstream] ❌ 源 [${apiSite.name}] 请求失败: ${response.status}`
+        `${prefix} ❌ 源 [${apiSite.name}] 请求失败: ${response.status}`
+      );
+      if (bodyText) {
+        console.warn(
+          `${prefix} 📄 源 [${apiSite.name}] 错误响应片段:`,
+          getResponsePreview(bodyText)
+        );
+      }
+      console.warn(
+        `${prefix} ℹ️ 源 [${apiSite.name}] 状态详情:`,
+        JSON.stringify({
+          status: response.status,
+          contentType,
+          url: apiUrl,
+          query,
+          originalQuery: context?.originalQuery || query,
+        })
       );
       return [];
     }
@@ -55,7 +86,7 @@ export async function searchFromApi(
       text.includes('暂不支持') ||
       text.trim().startsWith('Search not supported')
     ) {
-      console.log(`[Downstream] ⚠️ 源 [${apiSite.name}] 提示: 不支持搜索`);
+      console.log(`${prefix} ⚠️ 源 [${apiSite.name}] 提示: 不支持搜索`);
       return [];
     }
 
@@ -63,8 +94,23 @@ export async function searchFromApi(
     try {
       data = JSON.parse(text);
     } catch (e) {
+      const contentType = response.headers.get('content-type') || 'unknown';
       console.warn(
-        `[Downstream] 🚫 源 [${apiSite.name}] 返回数据格式错误 (非JSON)`
+        `${prefix} 🚫 源 [${apiSite.name}] 返回数据格式错误 (非JSON)`
+      );
+      console.warn(
+        `${prefix} 📄 源 [${apiSite.name}] 非JSON响应片段:`,
+        getResponsePreview(text)
+      );
+      console.warn(
+        `${prefix} ℹ️ 源 [${apiSite.name}] 响应详情:`,
+        JSON.stringify({
+          status: response.status,
+          contentType,
+          url: apiUrl,
+          query,
+          originalQuery: context?.originalQuery || query,
+        })
       );
       return [];
     }
@@ -75,7 +121,7 @@ export async function searchFromApi(
       !Array.isArray(data.list) ||
       data.list.length === 0
     ) {
-      console.log(`[Downstream] ⚠️ 源 [${apiSite.name}] 未找到结果`);
+      console.log(`${prefix} ⚠️ 源 [${apiSite.name}] 未找到结果`);
       return [];
     }
     // 处理第一页结果
@@ -155,7 +201,27 @@ export async function searchFromApi(
 
             if (!pageResponse.ok) return [];
 
-            const pageData = await pageResponse.json();
+            const pageText = await pageResponse.text();
+            let pageData;
+            try {
+              pageData = JSON.parse(pageText);
+            } catch {
+              const contentType =
+                pageResponse.headers.get('content-type') || 'unknown';
+              console.warn(
+                `${prefix} 📄 源 [${apiSite.name}] 第 ${page} 页非JSON，已跳过:`,
+                getResponsePreview(pageText)
+              );
+              console.warn(
+                `${prefix} ℹ️ 源 [${apiSite.name}] 第 ${page} 页详情:`,
+                JSON.stringify({
+                  status: pageResponse.status,
+                  contentType,
+                  url: pageUrl,
+                })
+              );
+              return [];
+            }
 
             if (!pageData || !pageData.list || !Array.isArray(pageData.list))
               return [];
@@ -211,11 +277,14 @@ export async function searchFromApi(
     }
 
     console.log(
-      `[Downstream] ✅ 源 [${apiSite.name}] 搜索完成，共找到 ${results.length} 个结果`
+      `${prefix} ✅ 源 [${apiSite.name}] 搜索完成，共找到 ${results.length} 个结果`
     );
     return results;
   } catch (error) {
-    console.error(`[Downstream] 🚫 源 [${apiSite.name}] 发生错误:`, error);
+    const prefix = context?.requestId
+      ? `[Downstream][${context.requestId}]`
+      : '[Downstream]';
+    console.error(`${prefix} 🚫 源 [${apiSite.name}] 发生错误:`, error);
     return [];
   }
 }
