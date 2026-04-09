@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   moontv:
-    image: my-moontv:latest
+    image: ghcr.io/openwrt1/moontv1:latest
     container_name: moontv-app
     restart: unless-stopped
     ports:
