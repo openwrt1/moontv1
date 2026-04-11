@@ -1,4 +1,4 @@
-// File: C:\Users\17872\Documents\GitHub\moontv1\src\app\api\hls-proxy\route.ts
+// File: /Users/rocket/Documents/GitHub/moontv1/src/app/api/hls-proxy/route.ts
 import * as entry from '../../../../../src/app/api/hls-proxy/route.js'
 import type { NextRequest } from 'next/server.js'
 

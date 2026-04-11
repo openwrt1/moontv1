@@ -1,4 +1,4 @@
-// File: C:\Users\17872\Documents\GitHub\moontv1\src\app\api\douban\categories\route.ts
+// File: /Users/rocket/Documents/GitHub/moontv1/src/app/api/douban/categories/route.ts
 import * as entry from '../../../../../../src/app/api/douban/categories/route.js'
 import type { NextRequest } from 'next/server.js'
 
