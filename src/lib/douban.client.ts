@@ -37,7 +37,28 @@ async function fetchWithTimeout(
 
   // 检查是否使用代理
   const proxyUrl = getDoubanProxyUrl();
-  const finalUrl = proxyUrl ? `${proxyUrl}${encodeURIComponent(url)}` : url;
+  let finalUrl = url;
+  if (proxyUrl) {
+    if (proxyUrl.includes('?url=')) {
+      finalUrl = `${proxyUrl}${encodeURIComponent(url)}`;
+    } else {
+      try {
+        const cleanProxy = proxyUrl.endsWith('/')
+          ? proxyUrl.slice(0, -1)
+          : proxyUrl;
+        const urlObj = new URL(url);
+        finalUrl = `${cleanProxy}${urlObj.pathname}${urlObj.search}`;
+      } catch (e) {
+        finalUrl = url;
+      }
+    }
+  }
+
+  console.log('=== 🕵️ DOUBAN FETCH DEBUG 🕵️ ===');
+  console.log('1. 原始请求 URL:', url);
+  console.log('2. 获取到的代理 URL:', proxyUrl);
+  console.log('3. 最终拼接要请求的 URL:', finalUrl);
+  console.log('=================================');
 
   const fetchOptions: RequestInit = {
     ...options,
