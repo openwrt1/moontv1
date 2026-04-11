@@ -46,10 +46,15 @@ export function getDoubanProxyUrl(): string | null {
 
   const localDoubanProxy = localStorage.getItem('doubanProxyUrl');
   if (localDoubanProxy != null) {
+    console.log('[Debug] 豆瓣代理来自 LocalStorage:', localDoubanProxy);
     return localDoubanProxy.trim() ? localDoubanProxy.trim() : null;
   }
 
   const serverDoubanProxy = (window as any).RUNTIME_CONFIG?.DOUBAN_PROXY;
+  console.log(
+    '[Debug] 豆瓣代理来自 RUNTIME_CONFIG (数据库/环境变量):',
+    serverDoubanProxy
+  );
   return serverDoubanProxy && serverDoubanProxy.trim()
     ? serverDoubanProxy.trim()
     : null;
@@ -61,7 +66,19 @@ export function processDoubanUrl(originalUrl: string): string {
   const proxyUrl = getDoubanProxyUrl();
   if (!proxyUrl) return originalUrl;
 
-  return `${proxyUrl}${encodeURIComponent(originalUrl)}`;
+  if (proxyUrl.includes('?url=')) {
+    return `${proxyUrl}${encodeURIComponent(originalUrl)}`;
+  } else {
+    try {
+      const cleanProxy = proxyUrl.endsWith('/')
+        ? proxyUrl.slice(0, -1)
+        : proxyUrl;
+      const urlObj = new URL(originalUrl);
+      return `${cleanProxy}${urlObj.pathname}${urlObj.search}`;
+    } catch (e) {
+      return originalUrl;
+    }
+  }
 }
 
 export function getHlsProxyUrl(originalUrl: string): string {
