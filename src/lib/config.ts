@@ -126,7 +126,7 @@ async function initConfig() {
         });
         // 站长
         const ownerUser =
-          process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+          process.env.ADMIN_USERNAME || process.env.USERNAME || 'wang';
         if (ownerUser) {
           adminConfig!.UserConfig.Users = adminConfig!.UserConfig.Users.filter(
             (u) => u.username !== ownerUser
@@ -143,7 +143,7 @@ async function initConfig() {
           role: 'user',
         }));
         const ownerUser =
-          process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+          process.env.ADMIN_USERNAME || process.env.USERNAME || 'wang';
         if (ownerUser) {
           allUsers = allUsers.filter((u) => u.username !== ownerUser);
           allUsers.unshift({
@@ -269,7 +269,7 @@ export async function getConfig(): Promise<AdminConfig> {
     });
 
     const ownerUser =
-      process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+      process.env.ADMIN_USERNAME || process.env.USERNAME || 'wang';
     // 检查配置中的站长用户是否和 USERNAME 匹配，如果不匹配则降级为普通用户
     let containOwner = false;
     adminConfig.UserConfig.Users.forEach((user) => {
@@ -331,7 +331,7 @@ export async function resetConfig() {
     role: 'user',
   }));
   const ownerUser =
-    process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+    process.env.ADMIN_USERNAME || process.env.USERNAME || 'wang';
   if (ownerUser) {
     allUsers = allUsers.filter((u) => u.username !== ownerUser);
     allUsers.unshift({

@@ -56,8 +56,9 @@ async function generateAuthCookie(
     authData.password = password;
   }
 
-  // 获取环境变量密码，如果没有则使用默认值 admin
-  const secret = process.env.ADMIN_PASSWORD || process.env.PASSWORD || 'admin';
+  // 获取环境变量密码，如果没有则使用默认值
+  const secret =
+    process.env.ADMIN_PASSWORD || process.env.PASSWORD || 'fq0UQXsDltpwdo9';
 
   if (username) {
     authData.username = username;
@@ -90,11 +91,11 @@ export async function POST(req: NextRequest) {
     const isCloudflare =
       !!process.env.CF_PAGES || process.env.STORAGE_TYPE === 'd1';
 
-    // 设置默认的站长账号密码（优先读环境变量，否则默认 admin/admin，方便本地和 Vercel 调试）
+    // 设置默认的站长账号密码（优先读环境变量，否则默认 wang/fq0UQXsDltpwdo9，方便本地和 Vercel 调试）
     const envUser =
-      process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+      process.env.ADMIN_USERNAME || process.env.USERNAME || 'wang';
     const envPass =
-      process.env.ADMIN_PASSWORD || process.env.PASSWORD || 'admin';
+      process.env.ADMIN_PASSWORD || process.env.PASSWORD || 'fq0UQXsDltpwdo9';
 
     if (isLocal) {
       console.log(

@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     // 判定操作者角色
     let operatorRole: 'owner' | 'admin';
     const ownerUser =
-      process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+      process.env.ADMIN_USERNAME || process.env.USERNAME || 'wang';
     if (username === ownerUser) {
       operatorRole = 'owner';
     } else {

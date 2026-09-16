@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // 权限校验
     const ownerUser =
-      process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+      process.env.ADMIN_USERNAME || process.env.USERNAME || 'wang';
     if (username !== ownerUser) {
       // 管理员
       const user = adminConfig.UserConfig.Users.find(

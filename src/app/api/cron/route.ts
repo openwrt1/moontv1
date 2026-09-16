@@ -46,7 +46,7 @@ async function refreshRecordAndFavorites() {
   try {
     const users = await db.getAllUsers();
     const ownerUser =
-      process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+      process.env.ADMIN_USERNAME || process.env.USERNAME || 'wang';
     if (ownerUser && !users.includes(ownerUser)) {
       users.push(ownerUser);
     }

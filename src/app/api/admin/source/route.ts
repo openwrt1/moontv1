@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     // 权限与身份校验
     const ownerUser =
-      process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+      process.env.ADMIN_USERNAME || process.env.USERNAME || 'wang';
     if (username !== ownerUser) {
       const userEntry = adminConfig.UserConfig.Users.find(
         (u) => u.username === username

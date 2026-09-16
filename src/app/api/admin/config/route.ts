@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     };
 
     const ownerUser =
-      process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+      process.env.ADMIN_USERNAME || process.env.USERNAME || 'wang';
     if (username === ownerUser) {
       result.Role = 'owner';
     } else {
