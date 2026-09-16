@@ -1,3 +1,10 @@
 {
-  "/page": "app/page.js"
+  "/api/playrecords/route": "app/api/playrecords/route.js",
+  "/api/favorites/route": "app/api/favorites/route.js",
+  "/api/search/route": "app/api/search/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/play/page": "app/play/page.js",
+  "/api/hls-proxy/route": "app/api/hls-proxy/route.js"
 }

@@ -18,11 +18,84 @@
       "assets": [],
       "env": {
         "__NEXT_BUILD_ID": "development",
-        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "OLN0MgFp+SSADKYvv3mjLBzg2x5YIu34ySeQ4swkvns="
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "MCkUCtZb3ORGHAY2eWqvIpydAofRDzoV37unvnBPozM="
       }
     }
   },
-  "functions": {},
+  "functions": {
+    "/api/playrecords/route": {
+      "files": [
+        "server/middleware-build-manifest.js",
+        "server/middleware-react-loadable-manifest.js",
+        "server/next-font-manifest.js",
+        "server/interception-route-rewrite-manifest.js",
+        "server/edge-runtime-webpack.js",
+        "server/app/api/playrecords/route.js"
+      ],
+      "name": "app/api/playrecords/route",
+      "page": "/api/playrecords/route",
+      "matchers": [
+        {
+          "regexp": "^/api/playrecords$",
+          "originalSource": "/api/playrecords"
+        }
+      ],
+      "wasm": [],
+      "assets": [],
+      "env": {
+        "__NEXT_BUILD_ID": "development",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "MCkUCtZb3ORGHAY2eWqvIpydAofRDzoV37unvnBPozM="
+      }
+    },
+    "/api/favorites/route": {
+      "files": [
+        "server/middleware-build-manifest.js",
+        "server/middleware-react-loadable-manifest.js",
+        "server/next-font-manifest.js",
+        "server/interception-route-rewrite-manifest.js",
+        "server/edge-runtime-webpack.js",
+        "server/app/api/favorites/route.js"
+      ],
+      "name": "app/api/favorites/route",
+      "page": "/api/favorites/route",
+      "matchers": [
+        {
+          "regexp": "^/api/favorites$",
+          "originalSource": "/api/favorites"
+        }
+      ],
+      "wasm": [],
+      "assets": [],
+      "env": {
+        "__NEXT_BUILD_ID": "development",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "MCkUCtZb3ORGHAY2eWqvIpydAofRDzoV37unvnBPozM="
+      }
+    },
+    "/api/search/route": {
+      "files": [
+        "server/middleware-build-manifest.js",
+        "server/middleware-react-loadable-manifest.js",
+        "server/next-font-manifest.js",
+        "server/interception-route-rewrite-manifest.js",
+        "server/edge-runtime-webpack.js",
+        "server/app/api/search/route.js"
+      ],
+      "name": "app/api/search/route",
+      "page": "/api/search/route",
+      "matchers": [
+        {
+          "regexp": "^/api/search$",
+          "originalSource": "/api/search"
+        }
+      ],
+      "wasm": [],
+      "assets": [],
+      "env": {
+        "__NEXT_BUILD_ID": "development",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "MCkUCtZb3ORGHAY2eWqvIpydAofRDzoV37unvnBPozM="
+      }
+    }
+  },
   "sortedMiddleware": [
     "/"
   ]
