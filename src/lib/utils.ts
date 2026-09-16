@@ -122,11 +122,17 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
   quality: string;
   loadSpeed: string;
   pingTime: number;
+  mode?: 'direct' | 'proxy';
 }> {
   const runProbe = (
     targetUrl: string,
     mode: 'direct' | 'proxy'
-  ): Promise<{ quality: string; loadSpeed: string; pingTime: number }> =>
+  ): Promise<{
+    quality: string;
+    loadSpeed: string;
+    pingTime: number;
+    mode: 'direct' | 'proxy';
+  }> =>
     new Promise((resolve, reject) => {
       const video = document.createElement('video');
       video.muted = true;
@@ -145,7 +151,12 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
       const finish = (
         outcome: 'resolve' | 'reject',
         payload:
-          | { quality: string; loadSpeed: string; pingTime: number }
+          | {
+              quality: string;
+              loadSpeed: string;
+              pingTime: number;
+              mode: 'direct' | 'proxy';
+            }
           | Error
       ) => {
         if (settled) return;
@@ -155,7 +166,12 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
         video.remove();
         if (outcome === 'resolve') {
           resolve(
-            payload as { quality: string; loadSpeed: string; pingTime: number }
+            payload as {
+              quality: string;
+              loadSpeed: string;
+              pingTime: number;
+              mode: 'direct' | 'proxy';
+            }
           );
         } else {
           reject(payload);
@@ -221,6 +237,7 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
           quality: width > 0 ? quality : '未知',
           loadSpeed: actualLoadSpeed,
           pingTime: Math.round(pingTime),
+          mode,
         });
       };
 

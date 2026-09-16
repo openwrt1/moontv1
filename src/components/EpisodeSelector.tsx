@@ -17,8 +17,9 @@ interface VideoInfo {
   quality: string;
   loadSpeed: string;
   pingTime: number;
-  hasError?: boolean; // 添加错误状态标识
-}
+  hasError?: boolean;
+  mode?: 'direct' | 'proxy';
+} // 添加错误状态标识
 
 interface EpisodeSelectorProps {
   /** 总集数 */
@@ -555,6 +556,19 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                                 if (!videoInfo.hasError) {
                                   return (
                                     <div className='flex items-end gap-3 text-xs'>
+                                      {videoInfo.mode && (
+                                        <div
+                                          className={`px-1.5 py-0.5 rounded text-[10px] ${
+                                            videoInfo.mode === 'direct'
+                                              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                                              : 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
+                                          }`}
+                                        >
+                                          {videoInfo.mode === 'direct'
+                                            ? '直连'
+                                            : '代理'}
+                                        </div>
+                                      )}
                                       <div className='text-green-600 dark:text-green-400 font-medium text-xs'>
                                         {videoInfo.loadSpeed}
                                       </div>
