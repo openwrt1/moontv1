@@ -113,13 +113,21 @@ export default function VideoCard({
     : type;
   const processedPoster = processImageUrl(actualPoster);
 
-  // 获取收藏状态
+  const isDouban = from === 'douban';
+  const favoriteSource = isDouban ? 'douban' : actualSource;
+  const favoriteId = isDouban ? actualDoubanId : actualId;
+  const canFavorite =
+    !!favoriteSource &&
+    !!favoriteId &&
+    favoriteId !== 'undefined' &&
+    favoriteId !== '0';
+
   useEffect(() => {
-    if (from === 'douban' || !actualSource || !actualId) return;
+    if (!canFavorite) return;
 
     const fetchFavoriteStatus = async () => {
       try {
-        const fav = await isFavorited(actualSource, actualId);
+        const fav = await isFavorited(favoriteSource, favoriteId);
         setFavorited(fav);
       } catch (err) {
         throw new Error('检查收藏状态失败');
@@ -128,35 +136,31 @@ export default function VideoCard({
 
     fetchFavoriteStatus();
 
-    // 监听收藏状态更新事件
-    const storageKey = generateStorageKey(actualSource, actualId);
+    const storageKey = generateStorageKey(favoriteSource, favoriteId);
     const unsubscribe = subscribeToDataUpdates(
       'favoritesUpdated',
       (newFavorites: Record<string, any>) => {
-        // 检查当前项目是否在新的收藏列表中
         const isNowFavorited = !!newFavorites[storageKey];
         setFavorited(isNowFavorited);
       }
     );
 
     return unsubscribe;
-  }, [from, actualSource, actualId]);
+  }, [canFavorite, favoriteSource, favoriteId]);
 
   const handleToggleFavorite = useCallback(
     async (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (from === 'douban' || !actualSource || !actualId) return;
+      if (!canFavorite) return;
       try {
         if (favorited) {
-          // 如果已收藏，删除收藏
-          await deleteFavorite(actualSource, actualId);
+          await deleteFavorite(favoriteSource, favoriteId);
           setFavorited(false);
         } else {
-          // 如果未收藏，添加收藏
-          await saveFavorite(actualSource, actualId, {
+          await saveFavorite(favoriteSource, favoriteId, {
             title: actualTitle,
-            source_name: source_name || '',
+            source_name: source_name || (isDouban ? '豆瓣' : ''),
             year: actualYear || '',
             cover: actualPoster,
             total_episodes: actualEpisodes ?? 1,
@@ -169,11 +173,12 @@ export default function VideoCard({
       }
     },
     [
-      from,
-      actualSource,
-      actualId,
+      canFavorite,
+      favoriteSource,
+      favoriteId,
       actualTitle,
       source_name,
+      isDouban,
       actualYear,
       actualPoster,
       actualEpisodes,
@@ -197,11 +202,16 @@ export default function VideoCard({
   );
 
   const handleClick = useCallback(() => {
-    if (from === 'douban') {
+    if (
+      from === 'douban' ||
+      (from === 'favorite' && actualSource === 'douban')
+    ) {
       router.push(
         `/play?title=${encodeURIComponent(actualTitle.trim())}${
           actualYear ? `&year=${actualYear}` : ''
-        }${actualSearchType ? `&stype=${actualSearchType}` : ''}`
+        }${actualSearchType ? `&stype=${actualSearchType}` : ''}${
+          actualQuery ? `&stitle=${encodeURIComponent(actualQuery.trim())}` : ''
+        }`
       );
     } else if (actualSource && actualId) {
       router.push(
@@ -259,14 +269,14 @@ export default function VideoCard({
         showSourceName: false,
         showProgress: false,
         showPlayButton: true,
-        showHeart: false,
+        showHeart: canFavorite,
         showCheckCircle: false,
         showDoubanLink: true,
         showRating: !!rate,
       },
     };
     return configs[from] || configs.search;
-  }, [from, isAggregate, actualDoubanId, rate]);
+  }, [from, isAggregate, actualDoubanId, rate, canFavorite]);
 
   return (
     <div
@@ -313,7 +323,8 @@ export default function VideoCard({
         )}
 
         {/* 操作按钮 */}
-        {(config.showHeart || config.showCheckCircle) && (
+        {(config.showCheckCircle ||
+          (config.showHeart && from !== 'douban')) && (
           <div className='absolute bottom-3 right-3 flex gap-3 opacity-0 translate-y-2 transition-all duration-300 ease-in-out group-hover:opacity-100 group-hover:translate-y-0'>
             {config.showCheckCircle && (
               <CheckCircle
@@ -322,7 +333,7 @@ export default function VideoCard({
                 className='text-white transition-all duration-300 ease-out hover:stroke-green-500 hover:scale-[1.1]'
               />
             )}
-            {config.showHeart && (
+            {config.showHeart && from !== 'douban' && (
               <Heart
                 onClick={handleToggleFavorite}
                 size={20}
@@ -334,6 +345,24 @@ export default function VideoCard({
               />
             )}
           </div>
+        )}
+
+        {config.showHeart && from === 'douban' && (
+          <button
+            onClick={handleToggleFavorite}
+            aria-label={favorited ? '取消收藏' : '加入收藏'}
+            className='absolute bottom-2 left-2 z-10 rounded-full p-1 transition-transform duration-300 ease-out hover:scale-110'
+          >
+            <Heart
+              size={22}
+              strokeWidth={2}
+              className={`transition-all duration-300 ease-out drop-shadow-sm ${
+                favorited
+                  ? 'fill-red-500 stroke-red-500'
+                  : 'fill-black/30 stroke-white/80'
+              }`}
+            />
+          </button>
         )}
 
         {/* 徽章 */}
