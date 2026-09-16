@@ -1,6 +1,6 @@
 name: Deploy Source Sync to VPS
 
-on:
+'on':
   push:
     branches:
       - main
