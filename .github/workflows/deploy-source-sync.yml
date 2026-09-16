@@ -1,0 +1,38 @@
+name: Deploy Source Sync to VPS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/daily-source-sync.js'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ${{ secrets.VPS_PROJECT_PATH }}
+            git fetch origin main
+            git checkout origin/main -- scripts/daily-source-sync.js
+            echo "📝 脚本已更新"
+            if pm2 describe moontv-source-sync > /dev/null 2>&1; then
+              pm2 restart moontv-source-sync
+              echo "✅ pm2 已重启（立即执行一次验证）"
+            else
+              pm2 start scripts/daily-source-sync.js \
+                --cron "0 6 * * *" \
+                --no-autorestart \
+                --name moontv-source-sync
+              pm2 save
+              echo "✅ pm2 已启动（每天 06:00 自动执行）"
+            fi
+            echo "--- 最近日志 ---"
+            pm2 logs moontv-source-sync --lines 25 --nostream
