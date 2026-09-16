@@ -31,7 +31,10 @@ export async function GET(request: NextRequest) {
       Role: 'owner',
       Config: config,
     };
-    if (username === process.env.USERNAME) {
+
+    const ownerUser =
+      process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+    if (username === ownerUser) {
       result.Role = 'owner';
     } else {
       const user = config.UserConfig.Users.find((u) => u.username === username);

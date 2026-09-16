@@ -18,7 +18,7 @@ const REMOTE_CONFIG_URL =
 
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const VERCEL_TEAM_SLUG = process.env.VERCEL_TEAM_SLUG || 'openwrt1s-projects';
-const VERCEL_PROJECT = process.env.VERCEL_PROJECT || 'moontvl-xuni';
+const VERCEL_PROJECT = process.env.VERCEL_PROJECT || 'moontv1';
 
 async function fetchRemoteConfig() {
   const controller = new AbortController();
@@ -43,7 +43,12 @@ async function fetchRemoteConfig() {
         sources: [],
       };
     }
-    const entries = Object.entries(data.api_site);
+
+    // 合并 api_site 和 adult_site
+    let entries = Object.entries(data.api_site);
+    if (data.adult_site && typeof data.adult_site === 'object') {
+      entries = entries.concat(Object.entries(data.adult_site));
+    }
     return {
       success: true,
       count: entries.length,

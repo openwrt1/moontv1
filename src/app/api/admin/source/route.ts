@@ -48,7 +48,9 @@ export async function POST(request: NextRequest) {
     const storage: IStorage | null = getStorage();
 
     // 权限与身份校验
-    if (username !== process.env.USERNAME) {
+    const ownerUser =
+      process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+    if (username !== ownerUser) {
       const userEntry = adminConfig.UserConfig.Users.find(
         (u) => u.username === username
       );

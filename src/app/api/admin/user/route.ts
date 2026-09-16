@@ -79,7 +79,9 @@ export async function POST(request: NextRequest) {
 
     // 判定操作者角色
     let operatorRole: 'owner' | 'admin';
-    if (username === process.env.USERNAME) {
+    const ownerUser =
+      process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+    if (username === ownerUser) {
       operatorRole = 'owner';
     } else {
       const userEntry = adminConfig.UserConfig.Users.find(
