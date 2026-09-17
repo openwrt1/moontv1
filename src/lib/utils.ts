@@ -183,7 +183,7 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
       const timeout = setTimeout(() => {
         console.warn(`[SpeedTest:${mode}] timeout`, { url: targetUrl });
         finish('reject', new Error('Timeout loading video metadata'));
-      }, 4000);
+      }, 10000);
 
       fetch(targetUrl, {
         method: 'GET',
