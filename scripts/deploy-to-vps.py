@@ -6,16 +6,29 @@ import io
 # 强制使用 UTF-8 打印，避免 Windows 下输出 emoji 报错
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
+# 自动读取当前目录的 .env 文件
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+if os.path.exists(env_path):
+    with open(env_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                key, _, value = line.partition('=')
+                os.environ[key.strip()] = value.strip().strip("'\"")
+
 # ================= 配置 =================
-VPS_IP = "103.11.77.126"  # ⚠️ 请将此处替换为你的 VPS IP 地址
-VPS_PORT = "9922"
-VPS_USER = "root"
-SSH_KEY_PATH = r"C:\Users\17872\.ssh\id_ed25519"
-REMOTE_DIR = "/root/moontv1"
+VPS_IP = "35.212.224.245"  # ⚠️ 请将此处替换为你的 VPS IP 地址
+VPS_PORT = "22"
+VPS_USER = "ubuntu"
+SSH_KEY_PATH = r"C:\Users\17872\.ssh\google_id_rsa"
+REMOTE_DIR = "/home/ubuntu/moontv1"
 SCRIPT_NAME = "daily-source-sync.js"
 
 # Vercel 配置 (可选)
-VERCEL_TOKEN = "vcp_8oOtxpHBNGarIuda5DEj6QYzsu5ct3G1SZn3eJMPcszCx4IXJJ33n3G0" # 如果需要自动部署，请在这里填入你的 Vercel API Token
+# 会自动从同目录下的 .env 文件中读取，防止泄露
+VERCEL_TOKEN = os.environ.get("VERCEL_TOKEN", "") 
+VERCEL_TEAM_SLUG = os.environ.get("VERCEL_TEAM_SLUG", "")
+VERCEL_GIT_ORG = os.environ.get("VERCEL_GIT_ORG", "openwrt1")
 
 # 获取当前脚本所在目录，拼接出要上传的 JS 脚本路径
 LOCAL_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), SCRIPT_NAME)
@@ -68,6 +81,8 @@ def main():
     pm2_script = f"""
     cd {REMOTE_DIR}
     export VERCEL_TOKEN="{VERCEL_TOKEN}"
+    export VERCEL_TEAM_SLUG="{VERCEL_TEAM_SLUG}"
+    export VERCEL_GIT_ORG="{VERCEL_GIT_ORG}"
     
     if pm2 describe moontv-source-sync > /dev/null 2>&1; then
         pm2 restart moontv-source-sync --update-env

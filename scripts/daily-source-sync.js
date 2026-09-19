@@ -71,7 +71,14 @@ async function triggerVercelDeploy() {
     return { skipped: true };
   }
   try {
-    const url = `https://api.vercel.com/v13/deployments?teamSlug=${VERCEL_TEAM_SLUG}`;
+    let url = `https://api.vercel.com/v13/deployments`;
+    if (VERCEL_TEAM_SLUG) {
+      url += `?teamSlug=${VERCEL_TEAM_SLUG}`;
+    }
+
+    const gitOrg = process.env.VERCEL_GIT_ORG || 'openwrt1';
+    const gitRepo = process.env.VERCEL_GIT_REPO || 'moontv1';
+
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -83,8 +90,8 @@ async function triggerVercelDeploy() {
         target: 'production',
         gitSource: {
           type: 'github',
-          org: 'openwrt1',
-          repo: 'moontv1',
+          org: gitOrg,
+          repo: gitRepo,
           ref: 'main',
         },
       }),
