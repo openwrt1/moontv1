@@ -85,13 +85,11 @@ def main():
     export VERCEL_GIT_ORG="{VERCEL_GIT_ORG}"
     
     if pm2 describe moontv-source-sync > /dev/null 2>&1; then
-        pm2 restart moontv-source-sync --update-env
-        echo "[OK] PM2 服务已重启"
-    else
-        pm2 start scripts/{SCRIPT_NAME} --cron "0 6 * * *" --no-autorestart --name moontv-source-sync
-        pm2 save
-        echo "[OK] PM2 服务已新建并启动（每天 06:00 执行）"
+        pm2 delete moontv-source-sync
     fi
+    pm2 start scripts/{SCRIPT_NAME} --cron "0 6 * * 0" --no-autorestart --name moontv-source-sync
+    pm2 save
+    echo "[OK] PM2 服务已启动（每周日 06:00 执行一次）"
     echo "--- 等待 3 秒让脚本执行完毕 ---"
     sleep 3
     echo "--- 打印最新日志 ---"

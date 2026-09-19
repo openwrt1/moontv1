@@ -2,9 +2,9 @@
 /* eslint-disable */
 // 每日源列表同步与检测脚本
 // 用法 (pm2):
-//   pm2 start scripts/daily-source-sync.js --cron "0 6 * * *" --no-autorestart --name moontv-source-sync
+//   pm2 start scripts/daily-source-sync.js --cron "0 6 * * 0" --no-autorestart --name moontv-source-sync
 // 用法 (crontab):
-//   0 6 * * * cd /path/to/moontv1 && node scripts/daily-source-sync.js >> source-sync.log 2>&1
+//   0 6 * * 0 cd /path/to/moontv1 && node scripts/daily-source-sync.js >> source-sync.log 2>&1
 // 环境变量:
 //   VERCEL_TOKEN     (可选) 设置后自动触发 Vercel 重新部署
 //   VERCEL_TEAM_SLUG (可选) 默认 openwrt1s-projects
