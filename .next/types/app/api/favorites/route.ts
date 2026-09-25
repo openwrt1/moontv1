@@ -1,4 +1,4 @@
-// File: C:\Users\17872\Documents\GitHub\moontv1\src\app\api\favorites\route.ts
+// File: /Volumes/MacData/GitHub/moontv1/src/app/api/favorites/route.ts
 import * as entry from '../../../../../src/app/api/favorites/route.js'
 import type { NextRequest } from 'next/server.js'
 

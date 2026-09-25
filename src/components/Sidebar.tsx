@@ -24,15 +24,17 @@ const SidebarContext = createContext<SidebarContextType>({
 
 export const useSidebar = () => useContext(SidebarContext);
 
-// 可替换为你自己的 logo 图片
 const Logo = () => {
   const { siteName } = useSite();
   return (
     <Link
       href='/'
-      className='flex items-center justify-center h-16 select-none hover:opacity-80 transition-opacity duration-200'
+      className='flex items-center justify-center h-16 select-none hover:opacity-80 transition-all duration-300 gap-2'
     >
-      <span className='text-2xl font-bold text-green-600 tracking-tight'>
+      <div className='w-8 h-8 rounded-xl bg-gradient-to-tr from-green-600 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-green-500/30'>
+        <Clover className='w-5 h-5 text-white' />
+      </div>
+      <span className='text-2xl font-extrabold bg-gradient-to-r from-green-500 via-fuchsia-400 to-purple-500 text-transparent bg-clip-text tracking-tight drop-shadow-sm'>
         {siteName}
       </span>
     </Link>
@@ -146,12 +148,12 @@ const Sidebar = ({ onToggle, activePath = '/' }: SidebarProps) => {
       <div className='hidden md:flex'>
         <aside
           data-sidebar
-          className={`fixed top-0 left-0 h-screen bg-white/40 backdrop-blur-xl transition-all duration-300 border-r border-gray-200/50 z-10 shadow-lg dark:bg-gray-900/70 dark:border-gray-700/50 ${
+          className={`fixed top-0 left-0 h-screen bg-white/60 backdrop-blur-3xl transition-all duration-300 border-r border-gray-200/50 z-10 shadow-2xl dark:bg-[#0b0e14]/60 dark:border-white/5 ${
             isCollapsed ? 'w-16' : 'w-64'
           }`}
           style={{
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
+            backdropFilter: 'blur(30px)',
+            WebkitBackdropFilter: 'blur(30px)',
           }}
         >
           <div className='flex h-full flex-col'>
