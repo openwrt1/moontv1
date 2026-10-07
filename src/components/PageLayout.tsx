@@ -12,7 +12,14 @@ interface PageLayoutProps {
 
 const PageLayout = ({ children, activePath = '/' }: PageLayoutProps) => {
   return (
-    <div className='w-full min-h-screen'>
+    <div className='w-full min-h-screen relative overflow-hidden bg-white dark:bg-[#0b0e14]'>
+      {/* 氛围背景发光效果 */}
+      <div className='absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none'>
+        <div className='absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-violet-600/10 dark:bg-violet-600/20 blur-[120px] mix-blend-screen'></div>
+        <div className='absolute top-[10%] -right-[10%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/10 dark:bg-fuchsia-600/20 blur-[100px] mix-blend-screen'></div>
+        <div className='absolute bottom-0 left-[20%] w-[60%] h-[40%] rounded-full bg-indigo-600/5 dark:bg-indigo-600/10 blur-[150px] mix-blend-screen'></div>
+      </div>
+
       {/* 移动端头部 */}
       <MobileHeader showBackButton={['/play'].includes(activePath)} />
 

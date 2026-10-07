@@ -18,33 +18,33 @@
       "assets": [],
       "env": {
         "__NEXT_BUILD_ID": "development",
-        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "MCkUCtZb3ORGHAY2eWqvIpydAofRDzoV37unvnBPozM="
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "fFvDSE/re0ARS/eOez+zTrf8ijL6U+h17+uJ7KE7WeQ="
       }
     }
   },
   "functions": {
-    "/api/playrecords/route": {
+    "/api/login/route": {
       "files": [
         "server/middleware-build-manifest.js",
         "server/middleware-react-loadable-manifest.js",
         "server/next-font-manifest.js",
         "server/interception-route-rewrite-manifest.js",
         "server/edge-runtime-webpack.js",
-        "server/app/api/playrecords/route.js"
+        "server/app/api/login/route.js"
       ],
-      "name": "app/api/playrecords/route",
-      "page": "/api/playrecords/route",
+      "name": "app/api/login/route",
+      "page": "/api/login/route",
       "matchers": [
         {
-          "regexp": "^/api/playrecords$",
-          "originalSource": "/api/playrecords"
+          "regexp": "^/api/login$",
+          "originalSource": "/api/login"
         }
       ],
       "wasm": [],
       "assets": [],
       "env": {
         "__NEXT_BUILD_ID": "development",
-        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "MCkUCtZb3ORGHAY2eWqvIpydAofRDzoV37unvnBPozM="
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "fFvDSE/re0ARS/eOez+zTrf8ijL6U+h17+uJ7KE7WeQ="
       }
     },
     "/api/favorites/route": {
@@ -68,31 +68,55 @@
       "assets": [],
       "env": {
         "__NEXT_BUILD_ID": "development",
-        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "MCkUCtZb3ORGHAY2eWqvIpydAofRDzoV37unvnBPozM="
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "fFvDSE/re0ARS/eOez+zTrf8ijL6U+h17+uJ7KE7WeQ="
       }
     },
-    "/api/search/route": {
+    "/api/playrecords/route": {
       "files": [
         "server/middleware-build-manifest.js",
         "server/middleware-react-loadable-manifest.js",
         "server/next-font-manifest.js",
         "server/interception-route-rewrite-manifest.js",
         "server/edge-runtime-webpack.js",
-        "server/app/api/search/route.js"
+        "server/app/api/playrecords/route.js"
       ],
-      "name": "app/api/search/route",
-      "page": "/api/search/route",
+      "name": "app/api/playrecords/route",
+      "page": "/api/playrecords/route",
       "matchers": [
         {
-          "regexp": "^/api/search$",
-          "originalSource": "/api/search"
+          "regexp": "^/api/playrecords$",
+          "originalSource": "/api/playrecords"
         }
       ],
       "wasm": [],
       "assets": [],
       "env": {
         "__NEXT_BUILD_ID": "development",
-        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "MCkUCtZb3ORGHAY2eWqvIpydAofRDzoV37unvnBPozM="
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "fFvDSE/re0ARS/eOez+zTrf8ijL6U+h17+uJ7KE7WeQ="
+      }
+    },
+    "/api/searchhistory/route": {
+      "files": [
+        "server/middleware-build-manifest.js",
+        "server/middleware-react-loadable-manifest.js",
+        "server/next-font-manifest.js",
+        "server/interception-route-rewrite-manifest.js",
+        "server/edge-runtime-webpack.js",
+        "server/app/api/searchhistory/route.js"
+      ],
+      "name": "app/api/searchhistory/route",
+      "page": "/api/searchhistory/route",
+      "matchers": [
+        {
+          "regexp": "^/api/searchhistory$",
+          "originalSource": "/api/searchhistory"
+        }
+      ],
+      "wasm": [],
+      "assets": [],
+      "env": {
+        "__NEXT_BUILD_ID": "development",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "fFvDSE/re0ARS/eOez+zTrf8ijL6U+h17+uJ7KE7WeQ="
       }
     }
   },
